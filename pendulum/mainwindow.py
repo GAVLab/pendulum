@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'mainwindow.ui'
+# Form implementation generated from reading ui file 'pendulum/mainwindow.ui'
 #
-# Created: Wed Jul 18 15:59:57 2012
-#      by: pyside-uic 0.2.13 running on PySide 1.1.1
+# Created: Wed Jul 18 17:17:34 2012
+#      by: pyside-uic 0.2.13 running on PySide 1.1.0
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -70,6 +70,8 @@ class Ui_MainWindow(object):
         self.motor_control_sb = QtGui.QSpinBox(self.groupBox)
         self.motor_control_sb.setMinimumSize(QtCore.QSize(75, 0))
         self.motor_control_sb.setMaximumSize(QtCore.QSize(75, 16777215))
+        self.motor_control_sb.setMinimum(-127)
+        self.motor_control_sb.setMaximum(127)
         self.motor_control_sb.setObjectName("motor_control_sb")
         self.horizontalLayout_2.addWidget(self.motor_control_sb)
         self.verticalLayout.addLayout(self.horizontalLayout_2)

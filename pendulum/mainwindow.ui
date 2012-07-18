@@ -158,6 +158,12 @@
              <height>16777215</height>
             </size>
            </property>
+           <property name="minimum">
+            <number>-127</number>
+           </property>
+           <property name="maximum">
+            <number>127</number>
+           </property>
           </widget>
          </item>
         </layout>

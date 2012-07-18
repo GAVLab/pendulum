@@ -14,6 +14,7 @@ from serial.tools import list_ports
 from pendulum.mainwindow import Ui_MainWindow
 
 class PendulumControl(QtGui.QMainWindow):
+    status_changed = QtCore.Signal(str)
     """Pendulum Control Mainwindow"""
     def __init__(self, ui):
         QtGui.QMainWindow.__init__(self)
@@ -45,6 +46,7 @@ class PendulumControl(QtGui.QMainWindow):
         self.update_timer.start(self.update_period)
         self.ui.desired_position.valueChanged.connect(self.on_desired_slider)
         self.ui.record_button.clicked.connect(self.on_record)
+        QtCore.QObject.connect(self, QtCore.SIGNAL("status_changed(str)"), self.ui.statusbar.showMessage)
 
     def on_record(self):
         if self.recording:
@@ -54,7 +56,7 @@ class PendulumControl(QtGui.QMainWindow):
             sleep(0.01)
             self.out_file.close()
         else:
-            file_name = QtGui.QFileDialog.getSaveFileName(self, caption="Output file", dir="~/Desktop", )
+            file_name = QtGui.QFileDialog.getSaveFileName(self, caption="Output file", dir="~/Desktop/data.csv", )
             if file_name[0]:
                 try:
                     self.out_file = open(file_name[0], 'w+')
@@ -84,7 +86,11 @@ class PendulumControl(QtGui.QMainWindow):
         self.ui.angle_plot.update_data(data, self.current_motor_control)
         if self.count == 0:
             if self.serial and self.serial.isOpen():
-                self.serial.write(str(int(self.current_motor_control))+"\n")
+                try:
+                    self.serial.write(str(int(self.current_motor_control))+"\n")
+                except Exception as e:
+                    self.ui.statusbar.showMessage(str(e))
+                    self.disconnect()
             self.count = 0
         else:
             self.count += 1
@@ -136,12 +142,12 @@ class PendulumControl(QtGui.QMainWindow):
 
     def read(self):
         """Reads from the serial port continuously"""
-        self.ui.statusbar.showMessage("Connecting...")
+        self.status_changed.emit("Connecting...")
         while self.connected and not self.quit:
                 line = self.serial.readline()
                 if "System Ready" in line:
                     break
-        self.ui.statusbar.showMessage("Connected")
+        self.status_changed.emit("Connected")
         while self.connected and not self.quit:
             try:
                 val = self.serial.readline()
