@@ -28,6 +28,10 @@ class PendulumControl(QtGui.QMainWindow):
         self.current_motor_control = 0
         self.count = 0
         self.update_timer = QtCore.QTimer()
+        self.recording = False
+        self.out_file = None
+        self.record_time = 0.0
+        self.data_period = 0.01
 
         self.data = []
         self.data_lock = Lock()
@@ -39,6 +43,30 @@ class PendulumControl(QtGui.QMainWindow):
         self.ui.motor_control.valueChanged.connect(self.on_motor_control_change)
         self.ui.zero_button.clicked.connect(self.on_zero)
         self.update_timer.start(self.update_period)
+        self.ui.desired_position.valueChanged.connect(self.on_desired_slider)
+        self.ui.record_button.clicked.connect(self.on_record)
+
+    def on_record(self):
+        if self.recording:
+            self.recording = False
+            self.ui.record_button.setText("Record")
+            from time import sleep
+            sleep(0.01)
+            self.out_file.close()
+        else:
+            file_name = QtGui.QFileDialog.getSaveFileName(self, caption="Output file", dir="~/Desktop", )
+            if file_name[0]:
+                try:
+                    self.out_file = open(file_name[0], 'w+')
+                    self.out_file.write("% Time in seconds, Angle in degrees, Motor command in [-127,127]\n")
+                    self.record_time = 0.0
+                    self.recording = True
+                    self.ui.record_button.setText("Stop Recording")
+                except Exception as e:
+                    self.ui.statusbar.showMessage(str(e))
+
+    def on_desired_slider(self, val):
+        self.ui.desired_pendulum_sb.setValue(float(val))
 
     def on_zero(self):
         self.ui.motor_control.setValue(0)
@@ -102,6 +130,10 @@ class PendulumControl(QtGui.QMainWindow):
         self.ui.statusbar.showMessage("Disconnected")
         self.ui.angle_plot.clear()
 
+    def update_record(self, val):
+        self.out_file.write("{}, {}, {}\n".format(self.record_time, val, self.current_motor_control))
+        self.record_time += self.data_period
+
     def read(self):
         """Reads from the serial port continuously"""
         self.ui.statusbar.showMessage("Connecting...")
@@ -116,6 +148,8 @@ class PendulumControl(QtGui.QMainWindow):
                 val = float(val)
                 with self.data_lock:
                     self.data.append(val)
+                if self.recording:
+                    self.update_record(val)
             except Exception as e:
                 pass
         self.update_timer.stop()

@@ -18,9 +18,7 @@
     <item row="0" column="0" rowspan="2">
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="1" column="0" colspan="3">
-       <widget class="MatplotlibWidget" name="angle_plot" native="true">
-        <zorder>groupBox</zorder>
-       </widget>
+       <widget class="MatplotlibWidget" name="angle_plot" native="true"/>
       </item>
       <item row="3" column="0">
        <widget class="QPushButton" name="connect_button">
@@ -70,31 +68,6 @@
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
-        <layout class="QGridLayout" name="gridLayout_8">
-         <item row="0" column="0">
-          <widget class="QCheckBox" name="checkBox">
-           <property name="text">
-            <string>Pendulum Angle</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QCheckBox" name="checkBox_2">
-           <property name="text">
-            <string>Motor Control</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QCheckBox" name="checkBox_3">
-           <property name="text">
-            <string>P, I, and D</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
         <spacer name="verticalSpacer_2">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -106,6 +79,13 @@
           </size>
          </property>
         </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="record_button">
+         <property name="text">
+          <string>Record</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -147,20 +127,40 @@
         </layout>
        </item>
        <item>
-        <widget class="QSlider" name="motor_control">
-         <property name="minimum">
-          <number>-127</number>
-         </property>
-         <property name="maximum">
-          <number>127</number>
-         </property>
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="tickPosition">
-          <enum>QSlider::TicksBelow</enum>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QSlider" name="motor_control">
+           <property name="minimum">
+            <number>-127</number>
+           </property>
+           <property name="maximum">
+            <number>127</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="tickPosition">
+            <enum>QSlider::TicksBelow</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="motor_control_sb">
+           <property name="minimumSize">
+            <size>
+             <width>75</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>75</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <widget class="QLabel" name="label_2">
@@ -170,17 +170,43 @@
         </widget>
        </item>
        <item>
-        <widget class="QSlider" name="desired_position">
-         <property name="maximum">
-          <number>360</number>
-         </property>
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="tickPosition">
-          <enum>QSlider::TicksBelow</enum>
-         </property>
-        </widget>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <widget class="QSlider" name="desired_position">
+           <property name="maximum">
+            <number>360</number>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="tickPosition">
+            <enum>QSlider::TicksBelow</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="desired_pendulum_sb">
+           <property name="minimumSize">
+            <size>
+             <width>75</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>75</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="maximum">
+            <double>359.990000000000009</double>
+           </property>
+           <property name="singleStep">
+            <double>1.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <layout class="QGridLayout" name="gridLayout_3">
@@ -260,5 +286,38 @@
   </customwidget>
  </customwidgets>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>motor_control</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>motor_control_sb</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>594</x>
+     <y>88</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>734</x>
+     <y>90</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>motor_control_sb</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>motor_control</receiver>
+   <slot>setValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>734</x>
+     <y>90</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>594</x>
+     <y>88</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
