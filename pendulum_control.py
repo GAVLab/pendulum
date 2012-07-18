@@ -13,8 +13,12 @@ from serial.tools import list_ports
 
 from pendulum.mainwindow import Ui_MainWindow
 
-class PendulumControl(QtGui.QMainWindow):
+class Communicate(QtCore.QObject):
     status_changed = QtCore.Signal(str)
+    disconnected = QtCore.Signal()
+    connected = QtCore.Signal()
+
+class PendulumControl(QtGui.QMainWindow):
     """Pendulum Control Mainwindow"""
     def __init__(self, ui):
         QtGui.QMainWindow.__init__(self)
@@ -34,6 +38,8 @@ class PendulumControl(QtGui.QMainWindow):
         self.record_time = 0.0
         self.data_period = 0.01
 
+        self.c = Communicate()
+
         self.data = []
         self.data_lock = Lock()
 
@@ -46,7 +52,9 @@ class PendulumControl(QtGui.QMainWindow):
         self.update_timer.start(self.update_period)
         self.ui.desired_position.valueChanged.connect(self.on_desired_slider)
         self.ui.record_button.clicked.connect(self.on_record)
-        QtCore.QObject.connect(self, QtCore.SIGNAL("status_changed(str)"), self.ui.statusbar.showMessage)
+        self.c.status_changed.connect(self.ui.statusbar.showMessage)
+        self.c.connected.connect(self.on_connected)
+        self.c.disconnected.connect(self.on_disconnected)
 
     def on_record(self):
         if self.recording:
@@ -60,7 +68,7 @@ class PendulumControl(QtGui.QMainWindow):
             if file_name[0]:
                 try:
                     self.out_file = open(file_name[0], 'w+')
-                    self.out_file.write("% Time in seconds, Angle in degrees, Motor command in [-127,127]\n")
+                    self.out_file.write("% Time in seconds, Angle in degrees, Motor command in [-127 to 127]\n")
                     self.record_time = 0.0
                     self.recording = True
                     self.ui.record_button.setText("Stop Recording")
@@ -127,7 +135,11 @@ class PendulumControl(QtGui.QMainWindow):
         if self.read_thread:
             self.read_thread.join()
 
-    def disconnect_(self):
+    def on_connected(self):
+        self.ui.statusbar.showMessage("Connected")
+
+    def on_disconnected(self):
+        self.update_timer.stop()
         if self.serial:
             self.serial.close()
         self.serial = None
@@ -142,12 +154,11 @@ class PendulumControl(QtGui.QMainWindow):
 
     def read(self):
         """Reads from the serial port continuously"""
-        self.status_changed.emit("Connecting...")
         while self.connected and not self.quit:
                 line = self.serial.readline()
                 if "System Ready" in line:
                     break
-        self.status_changed.emit("Connected")
+        self.c.connected.emit()
         while self.connected and not self.quit:
             try:
                 val = self.serial.readline()
@@ -158,8 +169,7 @@ class PendulumControl(QtGui.QMainWindow):
                     self.update_record(val)
             except Exception as e:
                 pass
-        self.update_timer.stop()
-        self.disconnect_()
+        self.c.disconnected.emit()
 
 if __name__ == '__main__':
     app = QtGui.QApplication(sys.argv)
