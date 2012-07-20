@@ -40,7 +40,7 @@ class MatplotlibWidget(FigureCanvas):
         else:
             self.angle_axis.set_ylim(-1, 1)
         # Do motor
-        for i in range(10):
+        for i in range(5):
             self.control_data.pop(0)
             self.control_data.append(current_motor_control)
         self.control_line.set_ydata(self.control_data)

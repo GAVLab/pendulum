@@ -36,7 +36,12 @@ class PendulumControl(QtGui.QMainWindow):
         self.recording = False
         self.out_file = None
         self.record_time = 0.0
-        self.data_period = 0.01
+        self.data_period = 0.005
+        self.desired_angle = 0.0
+        self.current_angle = None
+        self.integral_error = 0.0
+        self.previous_error = 0.0
+        self.controlling = False
 
         self.c = Communicate()
 
@@ -55,6 +60,51 @@ class PendulumControl(QtGui.QMainWindow):
         self.c.status_changed.connect(self.ui.statusbar.showMessage)
         self.c.connected.connect(self.on_connected)
         self.c.disconnected.connect(self.on_disconnected)
+        self.ui.desired_pendulum_sb.valueChanged.connect(self.on_desired_sb)
+        self.ui.control_button.clicked.connect(self.on_control_clicked)
+
+    def on_control_clicked(self):
+        if self.controlling:
+            self.controlling = False
+            self.ui.control_button.setText('Start Control')
+            self.ui.control_button.setStyleSheet('* { background-color: rgb(0,255,0) }')
+        else:
+            self.controlling = True
+            self.ui.control_button.setText('Stop Control')
+            self.ui.control_button.setStyleSheet('* { background-color: rgb(255,0,0) }')
+        self.current_motor_control = 0
+
+    def control_loop(self):
+        if not self.controlling:
+            return
+        current_angle = self.current_angle
+        if current_angle == None:
+            return
+        desired_angle = self.desired_angle
+        motor_command = self.current_motor_control
+        kp = self.ui.kp_sb.value()
+        ki = self.ui.ki_sb.value()
+        kd = self.ui.kd_sb.value()
+        dt = 0.01
+        MAX_INTEGRAL_ERROR = 30.0 # degrees
+        e = desired_angle - current_angle
+        derivate_error = (e - self.previous_error)/dt
+        self.integral_error += (e*dt)
+        if self.integral_error > MAX_INTEGRAL_ERROR:
+            self.integral_error = MAX_INTEGRAL_ERROR
+        if self.integral_error < -MAX_INTEGRAL_ERROR:
+            self.integral_error = -MAX_INTEGRAL_ERROR
+        u = (kp * e) + (ki * self.integral_error) + (kd * derivate_error)
+        #u /= 0.0787
+        print u, ki, e, self.integral_error
+        self.current_motor_control = (u / 12.0) * 127.0
+        print self.current_motor_control
+        self.current_motor_control *= -1.0
+        if self.current_motor_control > 0:
+            self.current_motor_control = min(127, self.current_motor_control)
+        else:
+            self.current_motor_control = max(-127, self.current_motor_control)
+        self.previous_error = e
 
     def on_record(self):
         if self.recording:
@@ -78,6 +128,10 @@ class PendulumControl(QtGui.QMainWindow):
     def on_desired_slider(self, val):
         self.ui.desired_pendulum_sb.setValue(float(val))
 
+    def on_desired_sb(self, val):
+        self.ui.desired_position.setValue(int(val))
+        self.desired_angle = val
+
     def on_zero(self):
         self.ui.motor_control.setValue(0)
 
@@ -89,8 +143,9 @@ class PendulumControl(QtGui.QMainWindow):
         with self.data_lock:
             data = list(self.data)
             self.data = []
+        self.control_loop()
         if data:
-            self.ui.angle_label.setText("Pendulum angle: {0}".format(data[-1]))
+            self.ui.angle_label.setText("Control Value: {0} | Pendulum angle: {1}".format(int(self.current_motor_control), data[-1]))
         self.ui.angle_plot.update_data(data, self.current_motor_control)
         if self.count == 0:
             if self.serial and self.serial.isOpen():
@@ -155,9 +210,9 @@ class PendulumControl(QtGui.QMainWindow):
     def read(self):
         """Reads from the serial port continuously"""
         while self.connected and not self.quit:
-                line = self.serial.readline()
-                if "System Ready" in line:
-                    break
+            line = self.serial.readline()
+            if "System Ready" in line:
+                break
         self.c.connected.emit()
         while self.connected and not self.quit:
             try:
@@ -167,6 +222,7 @@ class PendulumControl(QtGui.QMainWindow):
                     self.data.append(val)
                 if self.recording:
                     self.update_record(val)
+                self.current_angle = val
             except Exception as e:
                 pass
         self.c.disconnected.emit()
